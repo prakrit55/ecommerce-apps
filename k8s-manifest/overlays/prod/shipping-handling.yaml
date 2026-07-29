@@ -1,0 +1,11 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: shipping-handling
+spec:
+  replicas: 3
+  template:
+    spec:
+      containers:
+        - name: shipping-handling
+          image: shipping-handling:prod-v1.0.0

@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ecom-config
+data:
+  POSTGRES_DB: "postgres_dev"
+  MONGODB_URI: "mongodb://mongodb-service:27017/product_catalog_dev"

@@ -1,0 +1,11 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: product-catalog
+spec:
+  replicas: 1
+  template:
+    spec:
+      containers:
+        - name: product-catalog
+          image: product-catalog:dev

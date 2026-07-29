@@ -1,0 +1,65 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ecommerce-ui
+  labels:
+    app: ecommerce-ui
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ecommerce-ui
+  template:
+    metadata:
+      labels:
+        app: ecommerce-ui
+    spec:
+      containers:
+        - name: ecommerce-ui
+          image: ecommerce-ui
+          ports:
+            - containerPort: 4000
+          env:
+            - name: REACT_APP_PRODUCT_API_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: ecom-config
+                  key: REACT_APP_PRODUCT_API_HOST
+            - name: REACT_APP_INVENTORY_API_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: ecom-config
+                  key: REACT_APP_INVENTORY_API_HOST
+            - name: REACT_APP_ORDER_API_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: ecom-config
+                  key: REACT_APP_ORDER_API_HOST
+            - name: REACT_APP_SHIPPING_API_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: ecom-config
+                  key: REACT_APP_SHIPPING_API_HOST
+            - name: REACT_APP_CONTACT_API_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: ecom-config
+                  key: REACT_APP_CONTACT_API_HOST
+            - name: REACT_APP_PROFILE_API_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: ecom-config
+                  key: REACT_APP_PROFILE_API_HOST
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ecommerce-ui-service
+spec:
+  selector:
+    app: ecommerce-ui
+  ports:
+    - protocol: TCP
+      port: 4000
+      targetPort: 4000
+  type: LoadBalancer

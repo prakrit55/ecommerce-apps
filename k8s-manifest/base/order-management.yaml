@@ -1,0 +1,62 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: order-management
+  labels:
+    app: order-management
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: order-management
+  template:
+    metadata:
+      labels:
+        app: order-management
+    spec:
+      containers:
+        - name: order-management
+          image: order-management
+          ports:
+            - containerPort: 9090
+          env:
+            - name: SPRING_DATASOURCE_URL
+              value: "jdbc:postgresql://postgres-service:5432/postgres"
+            - name: SPRING_DATASOURCE_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: ecom-secrets
+                  key: postgres-username
+            - name: SPRING_DATASOURCE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: ecom-secrets
+                  key: postgres-password
+            - name: PRODUCT_INVENTORY_API_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: ecom-config
+                  key: ORDER_INVENTORY_HOST
+            - name: PRODUCT_CATALOG_API_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: ecom-config
+                  key: ORDER_CATALOG_HOST
+            - name: SHIPPING_HANDLING_API_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: ecom-config
+                  key: ORDER_SHIPPING_HOST
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: order-management-service
+spec:
+  selector:
+    app: order-management
+  ports:
+    - protocol: TCP
+      port: 9090
+      targetPort: 9090
+  type: ClusterIP

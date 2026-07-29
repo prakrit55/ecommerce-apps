@@ -1,0 +1,26 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ecom-config
+data:
+  # General API Hosts for the Frontend Express Gateway
+  REACT_APP_PRODUCT_API_HOST: "http://product-catalog-service"
+  REACT_APP_INVENTORY_API_HOST: "http://product-inventory-service"
+  REACT_APP_ORDER_API_HOST: "http://order-management-service"
+  REACT_APP_SHIPPING_API_HOST: "http://shipping-handling-service"
+  REACT_APP_CONTACT_API_HOST: "http://contact-support-service"
+  REACT_APP_PROFILE_API_HOST: "http://localhost"
+
+  # Order Management Service configurations (Java)
+  ORDER_INVENTORY_HOST: "http://product-inventory-service"
+  ORDER_CATALOG_HOST: "http://product-catalog-service"
+  ORDER_SHIPPING_HOST: "http://shipping-handling-service"
+
+  # PostgreSQL Configurations
+  POSTGRES_HOST: "postgres-service"
+  POSTGRES_PORT: "5432"
+  POSTGRES_DB: "postgres"
+
+  # MongoDB & Redis Configurations for Product Catalog
+  MONGODB_URI: "mongodb://mongodb-service:27017/product_catalog"
+  REDIS_URL: "redis://redis-service:6379"

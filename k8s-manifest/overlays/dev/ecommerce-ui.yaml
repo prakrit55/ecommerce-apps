@@ -1,0 +1,11 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ecommerce-ui
+spec:
+  replicas: 1
+  template:
+    spec:
+      containers:
+        - name: ecommerce-ui
+          image: ecommerce-ui:dev
