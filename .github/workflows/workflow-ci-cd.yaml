@@ -130,6 +130,8 @@ jobs:
         run: |
           npm ci --legacy-peer-deps
           npm run build
+        env:
+          CI: false
         working-directory: ./ecommerce-ui-code/client
 
       - name: Install UI server dependencies
