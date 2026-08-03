@@ -4,7 +4,7 @@ FROM node:20-alpine AS client-builder
 WORKDIR /app/client
 
 COPY client/package*.json ./
-RUN npm install
+RUN npm install --legacy-peer-deps
 
 COPY client/ ./
 RUN npm run build
