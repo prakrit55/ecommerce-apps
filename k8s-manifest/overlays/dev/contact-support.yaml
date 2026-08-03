@@ -9,3 +9,10 @@ spec:
       containers:
         - name: contact-support
           image: contact-support:dev
+          resources:
+            requests:
+              cpu: 2m
+              memory: 39Mi
+            limits:
+              cpu: 100m
+              memory: 128Mi

@@ -9,3 +9,10 @@ spec:
       containers:
         - name: order-management
           image: order-management:dev
+          resources:
+            requests:
+              cpu: 4m
+              memory: 430Mi
+            limits:
+              cpu: 200m
+              memory: 512Mi

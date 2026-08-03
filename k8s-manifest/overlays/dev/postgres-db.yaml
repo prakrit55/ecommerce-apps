@@ -9,3 +9,10 @@ spec:
       containers:
         - name: postgres
           image: postgres:15-alpine
+          resources:
+            requests:
+              cpu: 2m
+              memory: 68Mi
+            limits:
+              cpu: 100m
+              memory: 256Mi

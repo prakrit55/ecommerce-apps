@@ -9,3 +9,10 @@ spec:
       containers:
         - name: product-catalog
           image: product-catalog:dev
+          resources:
+            requests:
+              cpu: 4m
+              memory: 43Mi
+            limits:
+              cpu: 100m
+              memory: 128Mi

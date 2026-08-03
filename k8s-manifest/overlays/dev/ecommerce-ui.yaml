@@ -9,3 +9,10 @@ spec:
       containers:
         - name: ecommerce-ui
           image: ecommerce-ui:dev
+          resources:
+            requests:
+              cpu: 4m
+              memory: 32Mi
+            limits:
+              cpu: 100m
+              memory: 128Mi
