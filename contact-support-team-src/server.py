@@ -1,5 +1,6 @@
 import os
 import psycopg2
+import time
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 
@@ -23,25 +24,33 @@ def get_db_connection():
     )
 
 def init_db():
-    try:
-        conn = get_db_connection()
-        cursor = conn.cursor()
-        cursor.execute('''
-            CREATE TABLE IF NOT EXISTS contact_submissions (
-                id SERIAL PRIMARY KEY,
-                name VARCHAR(255) NOT NULL,
-                email VARCHAR(255) NOT NULL,
-                subject VARCHAR(255),
-                message TEXT NOT NULL,
-                submitted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        ''')
-        conn.commit()
-        cursor.close()
-        conn.close()
-        print("Contact support database initialized successfully.")
-    except Exception as e:
-        print("Failed to initialize contact support database:", e)
+    retries = 15
+    while retries > 0:
+        try:
+            conn = get_db_connection()
+            cursor = conn.cursor()
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS contact_submissions (
+                    id SERIAL PRIMARY KEY,
+                    name VARCHAR(255) NOT NULL,
+                    email VARCHAR(255) NOT NULL,
+                    subject VARCHAR(255),
+                    message TEXT NOT NULL,
+                    submitted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            ''')
+            conn.commit()
+            cursor.close()
+            conn.close()
+            print("Contact support database initialized successfully.")
+            return
+        except Exception as e:
+            retries -= 1
+            print(f"Failed to initialize contact support database (retries left: {retries}): {e}")
+            if retries == 0:
+                print("Could not connect to database after all retries. Starting server anyway.")
+            else:
+                time.sleep(3)
 
 # Initialize DB on startup
 init_db()

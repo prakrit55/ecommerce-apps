@@ -1,0 +1,71 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: ecommerce-gateway
+  namespace: gateway-system
+spec:
+  gatewayClassName: gke-l7-global-external-managed
+  listeners:
+    - name: http
+      protocol: HTTP
+      port: 80
+      allowedRoutes:
+        namespaces:
+          from: All
+    - name: https
+      protocol: HTTPS
+      port: 443
+      tls:
+        mode: Terminate
+        certificateRefs:
+          - kind: Secret
+            name: ecommerce-ui-cert-secret
+          - kind: Secret
+            name: vault-tls-secret
+      allowedRoutes:
+        namespaces:
+          from: All
+---
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: ecommerce-ui-issuer
+  namespace: gateway-system
+spec:
+  selfSigned: {}
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: ecommerce-ui-certificate
+  namespace: gateway-system
+spec:
+  commonName: app.prakriti.website
+  dnsNames:
+    - app.prakriti.website
+  secretName: ecommerce-ui-cert-secret
+  issuerRef:
+    name: ecommerce-ui-issuer
+    kind: Issuer
+---
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: vault-selfsigned-issuer
+  namespace: gateway-system
+spec:
+  selfSigned: {}
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: vault-selfsigned-cert
+  namespace: gateway-system
+spec:
+  commonName: vault.prakriti.website
+  dnsNames:
+    - vault.prakriti.website
+  secretName: vault-tls-secret
+  issuerRef:
+    name: vault-selfsigned-issuer
+    kind: Issuer

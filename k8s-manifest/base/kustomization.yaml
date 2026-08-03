@@ -3,7 +3,6 @@ kind: Kustomization
 
 resources:
   - app-config.yaml
-  - app-secrets.yaml
   - postgres-db.yaml
   - mongodb.yaml
   - redis.yaml
@@ -13,3 +12,4 @@ resources:
   - shipping-handling.yaml
   - contact-support.yaml
   - ecommerce-ui.yaml
+  - ecommerce-ui-gateway.yaml

@@ -118,10 +118,19 @@ func initDB() {
 		log.Fatalf("Error opening database: %q", err)
 	}
 
-	err = db.Ping()
-	if err != nil {
-		log.Printf("Warning: Could not connect to PostgreSQL shipping db: %q", err)
-		return
+	retries := 15
+	for retries > 0 {
+		err = db.Ping()
+		if err == nil {
+			break
+		}
+		retries--
+		log.Printf("Failed to connect to PostgreSQL shipping db (retries left: %d): %q", retries, err)
+		if retries == 0 {
+			log.Println("Could not connect to database after all retries. Starting server anyway.")
+			return
+		}
+		time.Sleep(3 * time.Second)
 	}
 
 	log.Println("Connected to PostgreSQL shipping db successfully")

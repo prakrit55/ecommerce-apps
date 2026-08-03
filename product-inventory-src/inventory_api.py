@@ -1,5 +1,6 @@
 import os
 import psycopg2
+import time
 from psycopg2.extras import RealDictCursor
 from flask import Flask, jsonify, request
 from flask_cors import CORS
@@ -40,29 +41,37 @@ def get_db_connection():
     )
 
 def init_db():
-    try:
-        conn = get_db_connection()
-        cursor = conn.cursor()
-        cursor.execute('''
-            CREATE TABLE IF NOT EXISTS inventory (
-                id INTEGER PRIMARY KEY,
-                quantity INTEGER NOT NULL
-            )
-        ''')
-        conn.commit()
-        
-        # Check if empty
-        cursor.execute('SELECT COUNT(*) FROM inventory')
-        count = cursor.fetchone()[0]
-        if count == 0:
-            for item in default_inventory:
-                cursor.execute('INSERT INTO inventory (id, quantity) VALUES (%s, %s)', (item['id'], item['quantity']))
+    retries = 15
+    while retries > 0:
+        try:
+            conn = get_db_connection()
+            cursor = conn.cursor()
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS inventory (
+                    id INTEGER PRIMARY KEY,
+                    quantity INTEGER NOT NULL
+                )
+            ''')
             conn.commit()
-        cursor.close()
-        conn.close()
-        print("Database initialized successfully.")
-    except Exception as e:
-        print("Failed to initialize database:", e)
+            
+            # Check if empty
+            cursor.execute('SELECT COUNT(*) FROM inventory')
+            count = cursor.fetchone()[0]
+            if count == 0:
+                for item in default_inventory:
+                    cursor.execute('INSERT INTO inventory (id, quantity) VALUES (%s, %s)', (item['id'], item['quantity']))
+                conn.commit()
+            cursor.close()
+            conn.close()
+            print("Database initialized successfully.")
+            return
+        except Exception as e:
+            retries -= 1
+            print(f"Failed to initialize database (retries left: {retries}): {e}")
+            if retries == 0:
+                print("Could not connect to database after all retries. Starting server anyway.")
+            else:
+                time.sleep(3)
 
 # Initialize DB on startup
 init_db()

@@ -1,8 +1,12 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
+namespace: ecom-dev
+
 resources:
   - ../../base
+  - secret.yaml
+  - vpa.yaml
 
 patches:
   - path: config-patch.yaml
@@ -15,3 +19,23 @@ patches:
   - path: shipping-handling.yaml
   - path: contact-support.yaml
   - path: ecommerce-ui.yaml
+
+images:
+  - name: contact-support
+    newName: us-central1-docker.pkg.dev/k8s-staging-252732/contact-support/contact-support
+    newTag: latest
+  - name: ecommerce-ui
+    newName: us-central1-docker.pkg.dev/k8s-staging-252732/ecommerce-ui/ecommerce-ui
+    newTag: latest
+  - name: order-management
+    newName: us-central1-docker.pkg.dev/k8s-staging-252732/order-management/order-management
+    newTag: latest
+  - name: product-catalog
+    newName: us-central1-docker.pkg.dev/k8s-staging-252732/product-catalog/product-catalog
+    newTag: latest
+  - name: product-inventory
+    newName: us-central1-docker.pkg.dev/k8s-staging-252732/product-inventory/product-inventory
+    newTag: latest
+  - name: shipping-handling
+    newName: us-central1-docker.pkg.dev/k8s-staging-252732/shipping-handling/shipping-handling
+    newTag: latest
