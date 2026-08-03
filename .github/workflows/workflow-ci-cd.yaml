@@ -128,7 +128,7 @@ jobs:
       - name: Build UI client
         if: matrix.service == 'ecommerce-ui'
         run: |
-          npm ci
+          npm ci --legacy-peer-deps
           npm run build
         working-directory: ./ecommerce-ui-code/client
 
@@ -145,6 +145,21 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
           cache: 'maven'
+
+      - name: Start PostgreSQL for Tests
+        if: matrix.service == 'order-management'
+        run: |
+          docker run -d --name postgres -p 5432:5432 -e POSTGRES_DB=postgres -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=postgres postgres:15
+          for i in {1..30}; do
+            if docker exec postgres pg_isready; then
+              echo "PostgreSQL is ready!"
+              exit 0
+            fi
+            echo "Waiting for PostgreSQL..."
+            sleep 1
+          done
+          echo "PostgreSQL failed to start"
+          exit 1
 
       - name: Run Maven Tests
         if: matrix.service == 'order-management'
