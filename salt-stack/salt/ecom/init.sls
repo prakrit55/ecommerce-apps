@@ -70,13 +70,3 @@ deploy_ecom_app:
   cmd.run:
     - name: docker-compose up -d --build
     - cwd: {{ app_dir }}/docker-compose
-      {% for folder in [
-        'product-catalog-code',
-        'product-inventory-src',
-        'shipping-and-handling-src',
-        'contact-support-team-src',
-        'order-management-code',
-        'ecommerce-ui-code'
-      ] %}
-      - file: sync_source_{{ folder }}
-      {% endfor %}
