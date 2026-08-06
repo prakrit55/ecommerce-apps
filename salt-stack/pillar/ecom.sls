@@ -1,5 +1,6 @@
 ecom:
   app_dir: /opt/ecom
+  repo_dir: /home/prakritidev881/ecommerce-apps
   postgres:
     user: postgres
     password: postgres

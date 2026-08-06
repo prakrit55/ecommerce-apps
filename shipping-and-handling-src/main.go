@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
 	"fmt"
@@ -10,6 +11,13 @@ import (
 	"time"
 
 	_ "github.com/lib/pq"
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
+	"go.opentelemetry.io/otel/propagation"
+	"go.opentelemetry.io/otel/sdk/resource"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+	semconv "go.opentelemetry.io/otel/semconv/v1.4.0"
 )
 
 var db *sql.DB
@@ -263,15 +271,53 @@ func handleAllShippingFees(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(feeDetails)
 }
 
+func initTracer() (*sdktrace.TracerProvider, error) {
+	ctx := context.Background()
+
+	exporter, err := otlptracegrpc.New(ctx, otlptracegrpc.WithInsecure())
+	if err != nil {
+		return nil, err
+	}
+
+	serviceName := os.Getenv("OTEL_SERVICE_NAME")
+	if serviceName == "" {
+		serviceName = "shipping-service"
+	}
+
+	tp := sdktrace.NewTracerProvider(
+		sdktrace.WithSampler(sdktrace.AlwaysSample()),
+		sdktrace.WithBatcher(exporter),
+		sdktrace.WithResource(resource.NewWithAttributes(
+			semconv.SchemaURL,
+			semconv.ServiceNameKey.String(serviceName),
+		)),
+	)
+
+	otel.SetTracerProvider(tp)
+	otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator(propagation.TraceContext{}, propagation.Baggage{}))
+
+	return tp, nil
+}
+
 func main() {
+	tp, err := initTracer()
+	if err != nil {
+		log.Fatalf("failed to initialize tracer: %v", err)
+	}
+	defer func() {
+		if err := tp.Shutdown(context.Background()); err != nil {
+			log.Printf("Error shutting down tracer provider: %v", err)
+		}
+	}()
+
 	initDB()
 	if db != nil {
 		defer db.Close()
 	}
 
-	http.HandleFunc("/shipping-fee", corsMiddleware(handleShippingFee))
-	http.HandleFunc("/shipping-explanation", corsMiddleware(handleShippingExplanation))
-	http.HandleFunc("/all-shipping-fees", corsMiddleware(handleAllShippingFees))
+	http.Handle("/shipping-fee", otelhttp.NewHandler(corsMiddleware(handleShippingFee), "shipping-fee"))
+	http.Handle("/shipping-explanation", otelhttp.NewHandler(corsMiddleware(handleShippingExplanation), "shipping-explanation"))
+	http.Handle("/all-shipping-fees", otelhttp.NewHandler(corsMiddleware(handleAllShippingFees), "all-shipping-fees"))
 
 	fmt.Println("Server is running on port 8080...")
 	log.Fatal(http.ListenAndServe(":8080", nil))

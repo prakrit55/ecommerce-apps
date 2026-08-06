@@ -19,4 +19,8 @@ COPY --from=builder /app/shipping-service .
 
 EXPOSE 8080
 
+# Set environment variables for OpenTelemetry configuration
+ENV OTEL_SERVICE_NAME="shipping-service"
+ENV OTEL_EXPORTER_OTLP_ENDPOINT="http://localhost:4317"
+
 CMD ["./shipping-service"]

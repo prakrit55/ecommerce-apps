@@ -3,12 +3,12 @@ name: E-Commerce Services CI/CD
 on:
   push:
     branches:
-      - main
-      - dev
+      - main-y
+      - dev-y
   pull_request:
     branches:
-      - main
-      - dev
+      - main-y
+      - dev-y
   workflow_dispatch:
 
 env:

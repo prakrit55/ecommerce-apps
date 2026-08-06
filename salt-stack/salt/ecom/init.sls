@@ -35,7 +35,9 @@ ecom_env_file:
     - require:
       - file: ecom_base_dir
 
-# Sync source code folders for docker build context
+{% set repo_dir = salt['pillar.get']('ecom:repo_dir', '') %}
+
+# Sync or link source code folders for docker build context
 {% for folder in [
   'product-catalog-code',
   'product-inventory-src',
@@ -45,6 +47,12 @@ ecom_env_file:
   'ecommerce-ui-code'
 ] %}
 sync_source_{{ folder }}:
+  {% if repo_dir %}
+  file.symlink:
+    - name: {{ app_dir }}/{{ folder }}
+    - target: {{ repo_dir }}/{{ folder }}
+    - force: True
+  {% else %}
   file.recurse:
     - name: {{ app_dir }}/{{ folder }}
     - source: salt://ecom/files/{{ folder }}
@@ -54,6 +62,7 @@ sync_source_{{ folder }}:
     - file_mode: 644
     - include_empty: True
     - clean: False
+  {% endif %}
 {% endfor %}
 
 # Deploy the application using Docker Compose
