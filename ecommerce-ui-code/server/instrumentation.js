@@ -3,7 +3,8 @@ import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-grpc';
 import { OTLPMetricExporter } from '@opentelemetry/exporter-metrics-otlp-grpc';
 import { PeriodicExportingMetricReader } from '@opentelemetry/sdk-metrics';
 import { getNodeAutoInstrumentations } from '@opentelemetry/auto-instrumentations-node';
-import { Resource } from '@opentelemetry/resources';
+import pkg from '@opentelemetry/resources';
+const { resourceFromAttributes } = pkg;
 
 const serviceName = process.env.OTEL_SERVICE_NAME || 'ecommerce-ui-server';
 const serviceVersion = process.env.OTEL_SERVICE_VERSION || '1.0.0';
@@ -19,7 +20,7 @@ const metricReader = new PeriodicExportingMetricReader({
 });
 
 const sdk = new NodeSDK({
-  resource: new Resource({
+  resource: resourceFromAttributes({
     'service.name': serviceName,
     'service.version': serviceVersion,
   }),

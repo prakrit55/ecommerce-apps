@@ -3,7 +3,7 @@ const { OTLPTraceExporter } = require('@opentelemetry/exporter-trace-otlp-grpc')
 const { OTLPMetricExporter } = require('@opentelemetry/exporter-metrics-otlp-grpc');
 const { PeriodicExportingMetricReader } = require('@opentelemetry/sdk-metrics');
 const { getNodeAutoInstrumentations } = require('@opentelemetry/auto-instrumentations-node');
-const { Resource } = require('@opentelemetry/resources');
+const { resourceFromAttributes } = require('@opentelemetry/resources');
 
 const serviceName = process.env.OTEL_SERVICE_NAME || 'product-catalog';
 const serviceVersion = process.env.OTEL_SERVICE_VERSION || '1.0.0';
@@ -25,7 +25,7 @@ const metricReader = new PeriodicExportingMetricReader({
 });
 
 const sdk = new NodeSDK({
-  resource: new Resource({
+  resource: resourceFromAttributes({
     'service.name': serviceName,
     'service.version': serviceVersion,
   }),
