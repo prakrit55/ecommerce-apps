@@ -12,12 +12,54 @@ import Inventory from './pages/Inventory';
 import Orders from './pages/Orders';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import { ThemeProvider } from '@material-ui/core/styles';
-import theme from './theme';
+import { ThemeProvider, makeStyles } from '@material-ui/core/styles';
+import CssBaseline from '@material-ui/core/CssBaseline';
+import IconButton from '@material-ui/core/IconButton';
+import Brightness4Icon from '@material-ui/icons/Brightness4';
+import Brightness7Icon from '@material-ui/icons/Brightness7';
+import getTheme from './theme';
+
+const useStyles = makeStyles((theme) => ({
+  themeToggle: {
+    position: 'fixed',
+    top: theme.spacing(2),
+    right: theme.spacing(9),
+    zIndex: 1300,
+    color: '#ffffff',
+    backgroundColor: '#6366f1',
+    width: 40,
+    height: 40,
+    '&:hover': {
+      backgroundColor: '#4f46e5',
+    },
+  },
+  themeToggleUnauth: {
+    position: 'fixed',
+    top: theme.spacing(2),
+    right: theme.spacing(2),
+    zIndex: 1300,
+    color: '#ffffff',
+    backgroundColor: '#6366f1',
+    width: 40,
+    height: 40,
+    '&:hover': {
+      backgroundColor: '#4f46e5',
+    },
+  }
+}));
 
 const App = () => {
+  const classes = useStyles();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState(null);
+  const [darkMode, setDarkMode] = useState(() => {
+    const saved = localStorage.getItem('darkMode');
+    return saved === 'true';
+  });
+
+  useEffect(() => {
+    localStorage.setItem('darkMode', darkMode);
+  }, [darkMode]);
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -42,10 +84,20 @@ const App = () => {
     setUser(null);
   };
 
+  const theme = getTheme(darkMode);
+
   return (
     <ThemeProvider theme={theme}>
+      <CssBaseline />
       <Router>
         <div>
+          <IconButton
+            className={isAuthenticated ? classes.themeToggle : classes.themeToggleUnauth}
+            onClick={() => setDarkMode(!darkMode)}
+            aria-label="toggle dark mode"
+          >
+            {darkMode ? <Brightness7Icon /> : <Brightness4Icon />}
+          </IconButton>
           {isAuthenticated && <UserMenu user={user} onLogout={handleLogout} />}
           <Routes>
             {/* Updated Route Logic */}

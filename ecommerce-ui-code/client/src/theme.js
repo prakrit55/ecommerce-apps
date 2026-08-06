@@ -1,7 +1,8 @@
 import { createMuiTheme } from '@material-ui/core/styles';
 
-const theme = createMuiTheme({
+const getTheme = (darkMode) => createMuiTheme({
   palette: {
+    type: darkMode ? 'dark' : 'light',
     primary: {
       main: '#6366f1',      // Indigo
       dark: '#4f46e5',
@@ -15,12 +16,12 @@ const theme = createMuiTheme({
       contrastText: '#ffffff',
     },
     background: {
-      default: '#f8fafc',    // Slate 50
-      paper: '#ffffff',
+      default: darkMode ? '#0f172a' : '#f8fafc',    // Slate 900 vs Slate 50
+      paper: darkMode ? '#1e293b' : '#ffffff',      // Slate 800 vs White
     },
     text: {
-      primary: '#0f172a',    // Slate 900
-      secondary: '#475569',  // Slate 600
+      primary: darkMode ? '#f8fafc' : '#0f172a',    // Slate 50 vs Slate 900
+      secondary: darkMode ? '#94a3b8' : '#475569',  // Slate 400 vs Slate 600
     },
   },
   typography: {
@@ -69,7 +70,7 @@ const theme = createMuiTheme({
         transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
         '&:hover': {
           transform: 'translateY(-1px)',
-          boxShadow: '0 8px 20px -6px rgba(99, 102, 241, 0.3)',
+          boxShadow: darkMode ? '0 8px 20px -6px rgba(99, 102, 241, 0.5)' : '0 8px 20px -6px rgba(99, 102, 241, 0.3)',
         },
       },
       containedPrimary: {
@@ -82,7 +83,8 @@ const theme = createMuiTheme({
         },
       },
       outlined: {
-        borderColor: '#e2e8f0',
+        borderColor: darkMode ? '#334155' : '#e2e8f0',
+        color: darkMode ? '#f8fafc' : 'inherit',
         '&:hover': {
           borderColor: '#6366f1',
           backgroundColor: 'rgba(99, 102, 241, 0.04)',
@@ -94,7 +96,7 @@ const theme = createMuiTheme({
         borderRadius: 16,
       },
       elevation3: {
-        boxShadow: '0 10px 30px -10px rgba(99, 102, 241, 0.08), 0 1px 3px rgba(0, 0, 0, 0.03)',
+        boxShadow: darkMode ? '0 10px 30px -10px rgba(0, 0, 0, 0.3), 0 1px 3px rgba(0, 0, 0, 0.1)' : '0 10px 30px -10px rgba(99, 102, 241, 0.08), 0 1px 3px rgba(0, 0, 0, 0.03)',
       },
     },
     MuiTextField: {
@@ -102,19 +104,25 @@ const theme = createMuiTheme({
         '& .MuiOutlinedInput-root': {
           borderRadius: 12,
           '& fieldset': {
-            borderColor: '#e2e8f0',
+            borderColor: darkMode ? '#334155' : '#e2e8f0',
             transition: 'border-color 0.2s ease',
           },
           '&:hover fieldset': {
-            borderColor: '#cbd5e1',
+            borderColor: darkMode ? '#475569' : '#cbd5e1',
           },
           '&.Mui-focused fieldset': {
             borderColor: '#6366f1',
           },
+        },
+        '& .MuiInputLabel-root': {
+          color: darkMode ? '#94a3b8' : 'inherit',
+        },
+        '& .MuiOutlinedInput-input': {
+          color: darkMode ? '#f8fafc' : 'inherit',
         },
       },
     },
   },
 });
 
-export default theme;
+export default getTheme;
