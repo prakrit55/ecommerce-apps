@@ -59,6 +59,11 @@ const App = () => {
 
   useEffect(() => {
     localStorage.setItem('darkMode', darkMode);
+    if (darkMode) {
+      document.body.classList.add('dark');
+    } else {
+      document.body.classList.remove('dark');
+    }
   }, [darkMode]);
 
   useEffect(() => {
