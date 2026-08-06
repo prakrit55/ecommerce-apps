@@ -220,7 +220,7 @@ services:
       - REACT_APP_ORDER_API_HOST=http://order-management
       - REACT_APP_SHIPPING_API_HOST=http://shipping-handling
       - REACT_APP_CONTACT_API_HOST=http://contact-support
-      - REACT_APP_PROFILE_API_HOST=http://localhost
+      - REACT_APP_PROFILE_API_HOST=${REACT_APP_PROFILE_API_HOST}
       - OTEL_SERVICE_NAME=ecommerce-ui
       - OTEL_EXPORTER_OTLP_ENDPOINT=${OTEL_EXPORTER_OTLP_ENDPOINT}
     depends_on:
