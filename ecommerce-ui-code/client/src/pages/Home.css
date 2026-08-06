@@ -55,7 +55,7 @@
 .microservice-section:hover {
   transform: translateY(-8px);
   box-shadow: var(--shadow-hover);
-  border-color: rgba(99, 102, 241, 0.2);
+  border-color: rgba(99, 102, 241, 0.45);
 }
 
 .microservice-section h2 {
@@ -71,6 +71,22 @@
   margin-bottom: 24px;
   line-height: 1.5;
   flex-grow: 1;
+}
+
+.card-icon {
+  font-size: 48px !important;
+  margin-bottom: 20px;
+  color: var(--primary-color);
+  background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-hover) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 4px 6px rgba(99, 102, 241, 0.15));
+  transition: var(--transition) !important;
+}
+
+.microservice-section:hover .card-icon {
+  transform: scale(1.1);
+  filter: drop-shadow(0 8px 12px rgba(99, 102, 241, 0.3));
 }
 
 .btn {
