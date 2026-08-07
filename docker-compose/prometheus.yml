@@ -7,11 +7,11 @@ scrape_configs:
     static_configs:
       - targets: ['otel-collector:8889']
 
-  - job_name: 'netdata'
-    metrics_path: '/api/v1/allmetrics'
-    params:
-      format: ['prometheus']
-      source: ['as-collected']
-    scrape_interval: 10s
-    static_configs:
-      - targets: ['netdata:19999']
+  # - job_name: 'netdata'
+  #   metrics_path: '/api/v1/allmetrics'
+  #   params:
+  #     format: ['prometheus']
+  #     source: ['as-collected']
+  #   scrape_interval: 10s
+  #   static_configs:
+  #     - targets: ['netdata:19999']
