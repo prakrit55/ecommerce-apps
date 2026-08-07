@@ -63,8 +63,9 @@ resource "google_compute_instance" "ecom_instance" {
 
       # 4. Clone and set up repository
       mkdir -p /home/prakritidev881
-      git clone https://github.com/prakrit55/ecommerce-apps.git /home/prakritidev881/ecommerce-apps
-      chown -R 1000:1000 /home/prakritidev881/ecommerce-apps
+      chown prakritidev881:prakritidev881 /home/prakritidev881
+      sudo -u prakritidev881 git clone https://github.com/prakrit55/ecommerce-apps.git /home/prakritidev881/ecommerce-apps
+      sudo -u prakritidev881 git config --global --add safe.directory /home/prakritidev881/ecommerce-apps
 
       # 5. Apply SaltState
       salt-call --local --file-root=/home/prakritidev881/ecommerce-apps/salt-stack/salt --pillar-root=/home/prakritidev881/ecommerce-apps/salt-stack/pillar state.apply
