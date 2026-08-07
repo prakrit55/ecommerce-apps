@@ -34,7 +34,8 @@ resource "google_compute_instance" "ecom_instance" {
 
       # 2. Install Docker & Docker Compose
       mkdir -p /etc/apt/keyrings
-      curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+      curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --yes --dearmor -o /etc/apt/keyrings/docker.gpg
+      chmod 644 /etc/apt/keyrings/docker.gpg
       echo \
         "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
         $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
@@ -50,7 +51,8 @@ resource "google_compute_instance" "ecom_instance" {
       usermod -aG docker prakritidev881
 
       # 3. Install Salt-Call (Masterless Salt-Minion)
-      curl -fsSL -o /etc/apt/keyrings/salt-archive-keyring.gpg https://packages.broadcom.com/artifactory/api/security/keypair/SaltProjectKey/public
+      curl -fsSL https://packages.broadcom.com/artifactory/api/security/keypair/SaltProjectKey/public | gpg --yes --dearmor -o /etc/apt/keyrings/salt-archive-keyring.gpg
+      chmod 644 /etc/apt/keyrings/salt-archive-keyring.gpg
       echo "deb [signed-by=/etc/apt/keyrings/salt-archive-keyring.gpg arch=$(dpkg --print-architecture)] https://packages.broadcom.com/artifactory/saltproject-deb/ stable main" | tee /etc/apt/sources.list.d/salt.list
       apt-get update
       apt-get install -y salt-minion
