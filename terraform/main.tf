@@ -51,9 +51,9 @@ resource "google_compute_instance" "ecom_instance" {
       usermod -aG docker prakritidev881
 
       # 3. Install Salt-Call (Masterless Salt-Minion)
-      curl -fsSL https://packages.broadcom.com/artifactory/api/security/keypair/SaltProjectKey/public | gpg --yes --dearmor -o /etc/apt/keyrings/salt-archive-keyring.gpg
-      chmod 644 /etc/apt/keyrings/salt-archive-keyring.gpg
-      echo "deb [signed-by=/etc/apt/keyrings/salt-archive-keyring.gpg arch=$(dpkg --print-architecture)] https://packages.broadcom.com/artifactory/saltproject-deb/ stable main" | tee /etc/apt/sources.list.d/salt.list
+      curl -fsSL -o /etc/apt/keyrings/salt-archive-keyring.asc https://packages.broadcom.com/artifactory/api/security/keypair/SaltProjectKey/public
+      chmod 644 /etc/apt/keyrings/salt-archive-keyring.asc
+      echo "deb [signed-by=/etc/apt/keyrings/salt-archive-keyring.asc arch=$(dpkg --print-architecture)] https://packages.broadcom.com/artifactory/saltproject-deb/ stable main" | tee /etc/apt/sources.list.d/salt.list
       apt-get update
       apt-get install -y salt-minion
 
