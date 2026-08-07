@@ -44,9 +44,14 @@ resource "google_compute_instance" "ecom_instance" {
       # Ensure standard docker-compose command works
       ln -sf /usr/libexec/docker/cli-plugins/docker-compose /usr/local/bin/docker-compose
 
+      # Ensure docker group exists and user is added to it
+      groupadd -f docker
+      id -u prakritidev881 &>/dev/null || useradd -m -s /bin/bash -u 1000 prakritidev881
+      usermod -aG docker prakritidev881
+
       # 3. Install Salt-Call (Masterless Salt-Minion)
-      curl -fsSL -o /etc/apt/keyrings/salt-archive-keyring-2023.gpg https://repo.saltproject.io/salt/py3/ubuntu/22.04/amd64/SALT-PROJECT-GPG-PUBKEY-2023.gpg
-      echo "deb [signed-by=/etc/apt/keyrings/salt-archive-keyring-2023.gpg] https://repo.saltproject.io/salt/py3/ubuntu/22.04/amd64/latest jammy main" | tee /etc/apt/sources.list.d/salt.list
+      curl -fsSL -o /etc/apt/keyrings/salt-archive-keyring.gpg https://packages.broadcom.com/artifactory/api/security/keypair/SaltProjectKey/public
+      echo "deb [signed-by=/etc/apt/keyrings/salt-archive-keyring.gpg arch=$(dpkg --print-architecture)] https://packages.broadcom.com/artifactory/saltproject-deb/ stable main" | tee /etc/apt/sources.list.d/salt.list
       apt-get update
       apt-get install -y salt-minion
 
