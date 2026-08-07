@@ -15,9 +15,10 @@ exporters:
 #    tls:
 #      insecure: true
 
-  prometheus:
-    endpoint: 0.0.0.0:8889
-    namespace: "ecom"
+  otlp:
+    endpoint: "netdata:4317"
+    tls:
+      insecure: true
 
 service:
   pipelines:
@@ -28,4 +29,4 @@ service:
     metrics:
       receivers: [otlp]
       processors: [batch]
-      exporters: [prometheus]
+      exporters: [otlp]
