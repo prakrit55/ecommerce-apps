@@ -85,6 +85,19 @@ services:
     networks:
       - ecom-network
 
+  grafana:
+    image: grafana/grafana:latest
+    container_name: ecom-grafana
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning
+    depends_on:
+      - prometheus
+    networks:
+      - ecom-network
+
 #  netdata:
 #    image: netdata/netdata:latest
 #    container_name: netdata
@@ -273,6 +286,7 @@ volumes:
   netdata_config:
   netdata_lib:
   netdata_cache:
+  grafana_data:
 
 networks:
   ecom-network:
