@@ -84,7 +84,7 @@ resource "google_compute_firewall" "allow_ecom_traffic" {
 
   allow {
     protocol = "tcp"
-    ports    = ["4000", "9092", "3001", "3002", "8080", "8000", "9090", "4317", "4318"]
+    ports    = ["4000", "9092", "3001", "3002", "8080", "8000", "9090", "4317", "4318", "19999"]
     # 4000: UI Portal
     # 9092: Prometheus Dashboard
     # 3001: Product Catalog
@@ -93,6 +93,7 @@ resource "google_compute_firewall" "allow_ecom_traffic" {
     # 8000: Contact Support
     # 9090: Order Management
     # 4317-4318: OpenTelemetry Collector (gRPC & HTTP)
+    # 19999: Netdata Dashboard
   }
 
   source_ranges = ["0.0.0.0/0"]
