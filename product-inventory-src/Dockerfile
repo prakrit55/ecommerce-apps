@@ -10,11 +10,5 @@ COPY . .
 
 EXPOSE 3002
 
-# Set environment variables for OpenTelemetry auto-instrumentation
-ENV OTEL_SERVICE_NAME="product-inventory"
-ENV OTEL_EXPORTER_OTLP_ENDPOINT="http://localhost:4317"
-ENV OTEL_TRACES_EXPORTER="otlp"
-ENV OTEL_METRICS_EXPORTER="otlp"
-ENV OTEL_LOGS_EXPORTER="none"
+CMD ["python", "inventory_api.py"]
 
-CMD ["opentelemetry-instrument", "python", "inventory_api.py"]

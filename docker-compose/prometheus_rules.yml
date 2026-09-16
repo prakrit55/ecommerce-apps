@@ -1,0 +1,200 @@
+groups:
+  # =========================================================================
+  # 1. SLI / SLO Recording Rules (Pre-computed metrics for fast querying)
+  # =========================================================================
+  - name: sli_slo_recording_rules
+    interval: 10s
+    rules:
+      # --- Availability SLI (Ratio of successful non-5xx requests) ---
+      - record: job:sli_availability:ratio_5m
+        expr: |
+          (
+            sum(rate(http_requests_total{status_code!~"5.."}[5m])) by (job)
+            or
+            sum(rate(http_server_requests_seconds_count{status!~"5.."}[5m])) by (job)
+          )
+          /
+          (
+            sum(rate(http_requests_total[5m])) by (job)
+            or
+            sum(rate(http_server_requests_seconds_count[5m])) by (job)
+          )
+
+      # --- Latency SLI (Ratio of requests <= 250ms) ---
+      - record: job:sli_latency_le_250ms:ratio_5m
+        expr: |
+          (
+            sum(rate(http_request_duration_seconds_bucket{le="0.25"}[5m])) by (job)
+            or
+            sum(rate(http_server_requests_seconds_bucket{le="0.25"}[5m])) by (job)
+          )
+          /
+          (
+            sum(rate(http_request_duration_seconds_count[5m])) by (job)
+            or
+            sum(rate(http_server_requests_seconds_count[5m])) by (job)
+          )
+
+      # --- Latency SLI (Ratio of requests <= 500ms) ---
+      - record: job:sli_latency_le_500ms:ratio_5m
+        expr: |
+          (
+            sum(rate(http_request_duration_seconds_bucket{le="0.5"}[5m])) by (job)
+            or
+            sum(rate(http_server_requests_seconds_bucket{le="0.5"}[5m])) by (job)
+          )
+          /
+          (
+            sum(rate(http_request_duration_seconds_count[5m])) by (job)
+            or
+            sum(rate(http_server_requests_seconds_count[5m])) by (job)
+          )
+
+      # --- Error Rate SLI (Ratio of 5xx server errors) ---
+      - record: job:sli_error_rate:ratio_5m
+        expr: |
+          (
+            sum(rate(http_requests_total{status_code=~"5.."}[5m])) by (job)
+            or
+            sum(rate(http_server_requests_seconds_count{status=~"5.."}[5m])) by (job)
+          )
+          /
+          (
+            sum(rate(http_requests_total[5m])) by (job)
+            or
+            sum(rate(http_server_requests_seconds_count[5m])) by (job)
+          )
+
+      # --- P95 Latency SLI (Seconds) ---
+      - record: job:sli_p95_latency_seconds:5m
+        expr: |
+          histogram_quantile(0.95,
+            sum(rate(http_request_duration_seconds_bucket[5m])) by (le, job)
+            or
+            sum(rate(http_server_requests_seconds_bucket[5m])) by (le, job)
+          )
+
+      # --- P99 Latency SLI (Seconds) ---
+      - record: job:sli_p99_latency_seconds:5m
+        expr: |
+          histogram_quantile(0.99,
+            sum(rate(http_request_duration_seconds_bucket[5m])) by (le, job)
+            or
+            sum(rate(http_server_requests_seconds_bucket[5m])) by (le, job)
+          )
+
+      # --- Throughput / Request Volume (RPS) ---
+      - record: job:http_throughput_rps:1m
+        expr: |
+          sum(rate(http_requests_total[1m])) by (job)
+          or
+          sum(rate(http_server_requests_seconds_count[1m])) by (job)
+
+  # =========================================================================
+  # 2. Service Level Objective (SLO) Alert Rules & Notifications
+  # =========================================================================
+  - name: sli_slo_alerts
+    rules:
+      # --- Alert: Service Outage / Instance Down ---
+      - alert: MicroserviceDown
+        expr: up == 0
+        for: 1m
+        labels:
+          severity: critical
+          category: availability
+        annotations:
+          summary: "Microservice {{ $labels.job }} is DOWN"
+          description: "Instance {{ $labels.instance }} of {{ $labels.job }} has been unreachable for more than 1 minute."
+
+      # --- Alert: Availability SLO Breach (< 99.5% SLO Target) ---
+      - alert: SLOAvailabilityBreachCritical
+        expr: job:sli_availability:ratio_5m < 0.995
+        for: 3m
+        labels:
+          severity: critical
+          category: slo_availability
+        annotations:
+          summary: "Availability SLO Breached for {{ $labels.job }}"
+          description: "Availability for {{ $labels.job }} is currently {{ $value | humanizePercentage }}, which is below the 99.5% SLO target."
+
+      # --- Alert: Latency SLO Breach (> 5% of requests take > 250ms) ---
+      - alert: SLOLatencyBreachWarning
+        expr: job:sli_latency_le_250ms:ratio_5m < 0.95
+        for: 5m
+        labels:
+          severity: warning
+          category: slo_latency
+        annotations:
+          summary: "Latency SLO Warning for {{ $labels.job }}"
+          description: "Only {{ $value | humanizePercentage }} of requests to {{ $labels.job }} completed in <= 250ms (SLO target is 95%)."
+
+      # --- Alert: Severe Latency SLO Breach (> 1% of requests take > 1s) ---
+      - alert: SLOLatencyBreachCritical
+        expr: job:sli_latency_le_500ms:ratio_5m < 0.98
+        for: 3m
+        labels:
+          severity: critical
+          category: slo_latency
+        annotations:
+          summary: "Severe Latency Degradation in {{ $labels.job }}"
+          description: "More than 2% of requests to {{ $labels.job }} took longer than 500ms over the last 3 minutes."
+
+      # --- Alert: High Error Rate (> 1% 5xx Server Errors) ---
+      - alert: SLOErrorRateHigh
+        expr: job:sli_error_rate:ratio_5m > 0.01
+        for: 2m
+        labels:
+          severity: critical
+          category: slo_error_rate
+        annotations:
+          summary: "High 5xx Error Rate in {{ $labels.job }}"
+          description: "Error rate in {{ $labels.job }} is {{ $value | humanizePercentage }} (threshold is > 1%)."
+
+      # --- Alert: Fast Error Budget Burn Rate (14.4x burn rate = 2% consumed in 1 hour) ---
+      - alert: SLOErrorBudgetFastBurn
+        expr: |
+          (
+            sum(rate(http_requests_total{status_code=~"5.."}[1h])) by (job)
+            /
+            sum(rate(http_requests_total[1h])) by (job)
+          ) > (14.4 * 0.005)
+        for: 2m
+        labels:
+          severity: critical
+          category: error_budget
+        annotations:
+          summary: "Fast Error Budget Burn Rate on {{ $labels.job }}"
+          description: "{{ $labels.job }} is burning through its 30-day error budget 14.4x faster than expected. Immediate investigation required."
+
+      # --- Alert: High Rate of Internal Service Exceptions ---
+      - alert: ServiceExceptionsSpike
+        expr: sum(rate(service_exceptions_total[5m])) by (job, exception_type) > 0.05
+        for: 2m
+        labels:
+          severity: warning
+          category: exceptions
+        annotations:
+          summary: "Spike in service exceptions on {{ $labels.job }}"
+          description: "Service {{ $labels.job }} is experiencing {{ $value }} exceptions/sec of type {{ $labels.exception_type }}."
+
+      # --- Alert: High CPU Resource Saturation (> 85%) ---
+      - alert: HighCPUSaturation
+        expr: sum(rate(process_cpu_seconds_total[5m])) by (job) * 100 > 85
+        for: 5m
+        labels:
+          severity: warning
+          category: resource_usage
+        annotations:
+          summary: "High CPU Usage on {{ $labels.job }}"
+          description: "{{ $labels.job }} has sustained CPU usage above 85% for 5 minutes."
+
+      # --- Alert: Low Disk Space (< 10% free) ---
+      - alert: LowDiskSpace
+        expr: (system_disk_usage_bytes{type="free"} / system_disk_usage_bytes{type="total"}) * 100 < 10
+        for: 5m
+        labels:
+          severity: critical
+          category: resource_usage
+        annotations:
+          summary: "Low Disk Space Alert"
+          description: "Free disk space has dropped below 10% on host/container."

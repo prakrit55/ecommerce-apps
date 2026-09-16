@@ -60,28 +60,14 @@ services:
   #  networks:
   #    - ecom-network
 
-  otel-collector:
-    image: otel/opentelemetry-collector-contrib:0.95.0
-    container_name: ecom-otel-collector
-    command: ["--config=/etc/otelcol-contrib/config.yaml"]
-    volumes:
-      - ./otel-collector-config.yaml:/etc/otelcol-contrib/config.yaml
-    ports:
-      - "4317:4317" # OTLP gRPC
-      - "4318:4318" # OTLP HTTP
-      - "8889:8889" # Prometheus exporter metrics port (Internal)
-    networks:
-      - ecom-network
-
   prometheus:
     image: prom/prometheus:v2.50.0
     container_name: ecom-prometheus
     volumes:
       - ./prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./prometheus_rules.yml:/etc/prometheus/prometheus_rules.yml
     ports:
       - "9092:9090" # Prometheus UI on port 9092
-    depends_on:
-      - otel-collector
     networks:
       - ecom-network
 
@@ -141,15 +127,11 @@ services:
     environment:
       - MONGODB_URI=mongodb://mongodb:27017/product_catalog
       - REDIS_URL=redis://redis:6379
-      - OTEL_SERVICE_NAME=product-catalog
-      - OTEL_EXPORTER_OTLP_ENDPOINT=${OTEL_EXPORTER_OTLP_ENDPOINT}
     depends_on:
       mongodb:
         condition: service_healthy
       redis:
         condition: service_healthy
-      otel-collector:
-        condition: service_started
     networks:
       - ecom-network
 
@@ -166,13 +148,9 @@ services:
       - POSTGRES_DB=${POSTGRES_DB}
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-      - OTEL_SERVICE_NAME=product-inventory
-      - OTEL_EXPORTER_OTLP_ENDPOINT=${OTEL_EXPORTER_OTLP_ENDPOINT}
     depends_on:
       postgres:
         condition: service_healthy
-      otel-collector:
-        condition: service_started
     networks:
       - ecom-network
 
@@ -189,13 +167,9 @@ services:
       - POSTGRES_DB=${POSTGRES_DB}
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-      - OTEL_SERVICE_NAME=shipping-service
-      - OTEL_EXPORTER_OTLP_ENDPOINT=${OTEL_EXPORTER_OTLP_ENDPOINT}
     depends_on:
       postgres:
         condition: service_healthy
-      otel-collector:
-        condition: service_started
     networks:
       - ecom-network
 
@@ -212,13 +186,9 @@ services:
       - POSTGRES_DB=${POSTGRES_DB}
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-      - OTEL_SERVICE_NAME=contact-support
-      - OTEL_EXPORTER_OTLP_ENDPOINT=${OTEL_EXPORTER_OTLP_ENDPOINT}
     depends_on:
       postgres:
         condition: service_healthy
-      otel-collector:
-        condition: service_started
     networks:
       - ecom-network
 
@@ -236,8 +206,6 @@ services:
       - PRODUCT_INVENTORY_API_HOST=http://product-inventory
       - PRODUCT_CATALOG_API_HOST=http://product-catalog
       - SHIPPING_HANDLING_API_HOST=http://shipping-handling
-      - OTEL_SERVICE_NAME=order-management
-      - OTEL_EXPORTER_OTLP_ENDPOINT=${OTEL_EXPORTER_OTLP_ENDPOINT}
     depends_on:
       postgres:
         condition: service_healthy
@@ -246,8 +214,6 @@ services:
       product-catalog:
         condition: service_started
       shipping-handling:
-        condition: service_started
-      otel-collector:
         condition: service_started
     networks:
       - ecom-network
@@ -268,15 +234,12 @@ services:
       - REACT_APP_SHIPPING_API_HOST=http://shipping-handling
       - REACT_APP_CONTACT_API_HOST=http://contact-support
       - REACT_APP_PROFILE_API_HOST=${REACT_APP_PROFILE_API_HOST}
-      - OTEL_SERVICE_NAME=ecommerce-ui
-      - OTEL_EXPORTER_OTLP_ENDPOINT=${OTEL_EXPORTER_OTLP_ENDPOINT}
     depends_on:
       - product-catalog
       - product-inventory
       - order-management
       - shipping-handling
       - contact-support
-      - otel-collector
     networks:
       - ecom-network
 

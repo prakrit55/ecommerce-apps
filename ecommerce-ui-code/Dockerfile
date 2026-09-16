@@ -22,4 +22,5 @@ COPY --from=client-builder /app/client/build /app/client/build
 
 EXPOSE 4000
 
-CMD ["node", "--import", "./instrumentation.js", "server.js"]
+CMD ["node", "server.js"]
+

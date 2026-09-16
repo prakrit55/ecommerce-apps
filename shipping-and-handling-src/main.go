@@ -1,26 +1,132 @@
 package main
 
 import (
-	"context"
 	"database/sql"
 	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
 	"os"
+	"strconv"
 	"time"
 
 	_ "github.com/lib/pq"
-	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
-	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
-	"go.opentelemetry.io/otel/propagation"
-	"go.opentelemetry.io/otel/sdk/resource"
-	sdktrace "go.opentelemetry.io/otel/sdk/trace"
-	semconv "go.opentelemetry.io/otel/semconv/v1.4.0"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 var db *sql.DB
+
+var (
+	httpRequestDuration = promauto.NewHistogramVec(
+		prometheus.HistogramOpts{
+			Name:    "http_request_duration_seconds",
+			Help:    "Duration of HTTP requests in seconds (response time & latency)",
+			Buckets: []float64{0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0, 10.0},
+		},
+		[]string{"method", "path", "status"},
+	)
+
+	httpResponseTimeMs = promauto.NewHistogramVec(
+		prometheus.HistogramOpts{
+			Name:    "http_response_time_milliseconds",
+			Help:    "Total time taken to process a request and generate a response in milliseconds",
+			Buckets: []float64{5, 10, 25, 50, 100, 250, 500, 1000, 2500, 5000, 10000},
+		},
+		[]string{"method", "path", "status"},
+	)
+
+	httpRequestsTotal = promauto.NewCounterVec(
+		prometheus.CounterOpts{
+			Name: "http_requests_total",
+			Help: "Total number of HTTP requests processed",
+		},
+		[]string{"method", "path", "status"},
+	)
+
+	httpRequestErrorsTotal = promauto.NewCounterVec(
+		prometheus.CounterOpts{
+			Name: "http_requests_errors_total",
+			Help: "Total number of HTTP requests resulting in client (4xx) or server (5xx) errors",
+		},
+		[]string{"method", "path", "status", "error_type"},
+	)
+
+	serviceExceptionsTotal = promauto.NewCounterVec(
+		prometheus.CounterOpts{
+			Name: "service_exceptions_total",
+			Help: "Total number of internal exceptions and operational failures encountered",
+		},
+		[]string{"exception_type", "operation"},
+	)
+
+	// Throughput: Active In-Flight Requests Gauge (Current Concurrent Load)
+	httpRequestsInFlight = promauto.NewGauge(
+		prometheus.GaugeOpts{
+			Name: "http_requests_in_flight",
+			Help: "Current number of simultaneous active HTTP requests being processed (concurrency/load)",
+		},
+	)
+
+	// Throughput: Response Payload Size in Bytes (Network throughput)
+	httpResponseSizeBytes = promauto.NewHistogramVec(
+		prometheus.HistogramOpts{
+			Name:    "http_response_size_bytes",
+			Help:    "Size of HTTP response payload in bytes (network throughput & bandwidth tracking)",
+			Buckets: []float64{100, 500, 1000, 5000, 10000, 50000, 100000, 500000, 1000000},
+		},
+		[]string{"method", "path", "status"},
+	)
+)
+
+type responseWriterWithStatus struct {
+	http.ResponseWriter
+	statusCode   int
+	bytesWritten int64
+}
+
+func (rw *responseWriterWithStatus) WriteHeader(code int) {
+	rw.statusCode = code
+	rw.ResponseWriter.WriteHeader(code)
+}
+
+func (rw *responseWriterWithStatus) Write(b []byte) (int, error) {
+	n, err := rw.ResponseWriter.Write(b)
+	rw.bytesWritten += int64(n)
+	return n, err
+}
+
+func prometheusMiddleware(next http.HandlerFunc, path string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		httpRequestsInFlight.Inc()
+		defer httpRequestsInFlight.Dec()
+
+		start := time.Now()
+		wrapped := &responseWriterWithStatus{ResponseWriter: w, statusCode: http.StatusOK}
+
+		next.ServeHTTP(wrapped, r)
+
+		duration := time.Since(start)
+		durationSec := duration.Seconds()
+		durationMs := float64(duration.Milliseconds())
+		statusStr := strconv.Itoa(wrapped.statusCode)
+
+		httpRequestDuration.WithLabelValues(r.Method, path, statusStr).Observe(durationSec)
+		httpResponseTimeMs.WithLabelValues(r.Method, path, statusStr).Observe(durationMs)
+		httpRequestsTotal.WithLabelValues(r.Method, path, statusStr).Inc()
+		httpResponseSizeBytes.WithLabelValues(r.Method, path, statusStr).Observe(float64(wrapped.bytesWritten))
+
+		// Track Error Rate (4xx and 5xx)
+		if wrapped.statusCode >= 400 {
+			errorType := "client_error"
+			if wrapped.statusCode >= 500 {
+				errorType = "server_error"
+			}
+			httpRequestErrorsTotal.WithLabelValues(r.Method, path, statusStr, errorType).Inc()
+		}
+	}
+}
 
 func corsMiddleware(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -271,53 +377,16 @@ func handleAllShippingFees(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(feeDetails)
 }
 
-func initTracer() (*sdktrace.TracerProvider, error) {
-	ctx := context.Background()
-
-	exporter, err := otlptracegrpc.New(ctx, otlptracegrpc.WithInsecure())
-	if err != nil {
-		return nil, err
-	}
-
-	serviceName := os.Getenv("OTEL_SERVICE_NAME")
-	if serviceName == "" {
-		serviceName = "shipping-service"
-	}
-
-	tp := sdktrace.NewTracerProvider(
-		sdktrace.WithSampler(sdktrace.AlwaysSample()),
-		sdktrace.WithBatcher(exporter),
-		sdktrace.WithResource(resource.NewWithAttributes(
-			semconv.SchemaURL,
-			semconv.ServiceNameKey.String(serviceName),
-		)),
-	)
-
-	otel.SetTracerProvider(tp)
-	otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator(propagation.TraceContext{}, propagation.Baggage{}))
-
-	return tp, nil
-}
-
 func main() {
-	tp, err := initTracer()
-	if err != nil {
-		log.Fatalf("failed to initialize tracer: %v", err)
-	}
-	defer func() {
-		if err := tp.Shutdown(context.Background()); err != nil {
-			log.Printf("Error shutting down tracer provider: %v", err)
-		}
-	}()
-
 	initDB()
 	if db != nil {
 		defer db.Close()
 	}
 
-	http.Handle("/shipping-fee", otelhttp.NewHandler(corsMiddleware(handleShippingFee), "shipping-fee"))
-	http.Handle("/shipping-explanation", otelhttp.NewHandler(corsMiddleware(handleShippingExplanation), "shipping-explanation"))
-	http.Handle("/all-shipping-fees", otelhttp.NewHandler(corsMiddleware(handleAllShippingFees), "all-shipping-fees"))
+	http.Handle("/shipping-fee", corsMiddleware(prometheusMiddleware(handleShippingFee, "/shipping-fee")))
+	http.Handle("/shipping-explanation", corsMiddleware(prometheusMiddleware(handleShippingExplanation, "/shipping-explanation")))
+	http.Handle("/all-shipping-fees", corsMiddleware(prometheusMiddleware(handleAllShippingFees, "/all-shipping-fees")))
+	http.Handle("/metrics", promhttp.Handler())
 
 	fmt.Println("Server is running on port 8080...")
 	log.Fatal(http.ListenAndServe(":8080", nil))
