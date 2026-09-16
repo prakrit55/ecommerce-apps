@@ -108,7 +108,7 @@ app.use((req, res, next) => {
   if (req.path === '/metrics') {
     return next();
   }
-  
+
   // Increment in-flight requests on entry
   httpRequestsInFlight.inc();
   const startTime = process.hrtime.bigint();

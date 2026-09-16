@@ -13,7 +13,7 @@ app.use(cors());
 // Prometheus Metrics Configuration
 const register = new client.Registry();
 client.collectDefaultMetrics({ register, prefix: 'product_catalog_' });
-
+ 
 // Resource Usage Metrics (CPU, Memory, System Resources)
 const processMemoryRssBytes = new client.Gauge({
   name: 'process_memory_rss_bytes',
