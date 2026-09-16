@@ -95,11 +95,11 @@ jobs:
           elif [ "$SERVICE" = "product-catalog-code" ]; then
             echo "dir=./product-catalog-code" >> $GITHUB_OUTPUT
             echo "file=./product-catalog-code/Dockerfile" >> $GITHUB_OUTPUT
-            echo "image=product-catalog" >> $GITHUB_OUTPUT
+            echo "image=product-catalog-code" >> $GITHUB_OUTPUT
           elif [ "$SERVICE" = "product-catalog-src" ]; then
             echo "dir=./product-catalog-src" >> $GITHUB_OUTPUT
             echo "file=./product-catalog-src/Dockerfile" >> $GITHUB_OUTPUT
-            echo "image=product-catalog" >> $GITHUB_OUTPUT
+            echo "image=product-catalog-src" >> $GITHUB_OUTPUT
           elif [ "$SERVICE" = "product-inventory" ]; then
             echo "dir=./product-inventory-src" >> $GITHUB_OUTPUT
             echo "file=./product-inventory-src/Dockerfile" >> $GITHUB_OUTPUT
