@@ -1,14 +1,21 @@
-# Use the official Maven runtime with JDK 17 as a base image
-FROM maven:3.6.3-openjdk-17-slim
-
-# Set the working directory inside the container
+# Build stage
+FROM maven:3.9.6-eclipse-temurin-17 AS builder
 WORKDIR /app
 
-# Copy the project files
-COPY . .
+# Cache Maven dependencies
+COPY pom.xml .
+RUN mvn dependency:go-offline -B || true
 
-# Expose the port that the application listens on
+# Copy source and build package
+COPY src ./src
+RUN mvn clean package -DskipTests
+
+# Runtime stage using updated Temurin JDK 17 (cgroups v2 compatible)
+FROM eclipse-temurin:17-jre-jammy
+WORKDIR /app
+
+COPY --from=builder /app/target/*.jar app.jar
+
 EXPOSE 9090
 
-## 5. Define the command to run when the container starts.
-CMD ["mvn", "spring-boot:run"]
+ENTRYPOINT ["java", "-jar", "app.jar"]
