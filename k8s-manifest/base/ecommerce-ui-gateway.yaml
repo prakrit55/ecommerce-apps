@@ -12,19 +12,19 @@ spec:
     - backendRefs:
         - name: ecommerce-ui-service
           port: 4000
----
-apiVersion: networking.gke.io/v1
-kind: HealthCheckPolicy
-metadata:
-  name: ecommerce-ui-healthcheck
-spec:
-  default:
-    config:
-      type: HTTP
-      httpHealthCheck:
-        port: 4000
-        requestPath: /
-  targetRef:
-    group: ""
-    kind: Service
-    name: ecommerce-ui-service
+# ---
+# apiVersion: networking.gke.io/v1
+# kind: HealthCheckPolicy
+# metadata:
+#   name: ecommerce-ui-healthcheck
+# spec:
+#   default:
+#     config:
+#       type: HTTP
+#       httpHealthCheck:
+#         port: 4000
+#         requestPath: /
+#   targetRef:
+#     group: ""
+#     kind: Service
+#     name: ecommerce-ui-service

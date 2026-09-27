@@ -1,12 +1,23 @@
 # 🚀 E-Commerce Infrastructure Deployment (Terraform)
 
-This directory contains the Terraform configuration to provision a Google Compute Engine (GCE) VM instance and configure the networking firewall rules required to run the **E-Commerce Application** stack.
+This directory provides automated Terraform infrastructure configurations to deploy the entire **E-Commerce Application** and observability stack across multiple cloud providers.
 
 ---
 
-## 🛠️ Infrastructure Overview
+## ☁️ Supported Cloud Providers
 
-The configuration provisions the following resources on Google Cloud Platform:
+Select the cloud provider of your choice:
+
+| Provider | Folder | Resources Created | Guide |
+| :--- | :--- | :--- | :--- |
+| **Amazon Web Services (AWS)** | [`terraform/aws`](file:///r:/Devops%20territory/ecom/terraform/aws) | EC2 (`t3.medium`), 30GB gp3 EBS, Security Group, Automated Cloud-Init Bootstrap | [AWS Readme](file:///r:/Devops%20territory/ecom/terraform/aws/README.md) |
+| **Google Cloud Platform (GCP)** | [`terraform/`](file:///r:/Devops%20territory/ecom/terraform) | Compute Engine VM (`e2-medium`), 30GB Persistent Disk, Firewall Rules, Startup Script | [GCP Readme](file:///r:/Devops%20territory/ecom/terraform/README.md) |
+
+---
+
+## 🛠️ GCP Infrastructure Overview
+
+The root Terraform configuration provisions the following on Google Cloud Platform:
 
 * **Compute Engine VM (`e2-medium`)**: Configured with 2 vCPUs and 4 GB RAM running **Ubuntu 22.04 LTS**.
 * **Automated Startup Script**: Automatically configures the VM by installing:
@@ -16,16 +27,16 @@ The configuration provisions the following resources on Google Cloud Platform:
 * **Firewall Rules**: Open traffic from the public internet for the following ports:
   * `4000`: E-Commerce Frontend Web UI
   * `9092`: Prometheus Metrics Dashboard
+  * `3000`: Grafana Dashboard
+  * `19999`: Netdata System Metrics
   * `3001` - `9090`: Application APIs (Catalog, Inventory, Orders, Shipping, Contact Support)
   * `4317` - `4318`: OpenTelemetry Collector (gRPC & HTTP)
 
 ---
 
-## 📋 Prerequisites
+## 📋 Prerequisites for GCP
 
-Before running this Terraform configuration, ensure you have:
-
-1. **Terraform CLI** installed locally (v1.0.0+).
+1. **Terraform CLI** installed locally (`v1.0.0+`).
 2. **Google Cloud SDK (gcloud)** installed and authenticated:
    ```bash
    gcloud auth application-default login
@@ -34,44 +45,30 @@ Before running this Terraform configuration, ensure you have:
 
 ---
 
-## 🚀 Quick Start Deployment
+## 🚀 Quick Start Deployment (GCP)
 
 Execute the following commands from the `terraform` directory:
 
 ### 1. Initialize Terraform
-Downloads the required Google Cloud providers and initializes the backend:
 ```bash
 terraform init
 ```
 
 ### 2. Plan the Deployment
-Verify the resources that will be created:
 ```bash
 terraform plan
 ```
 
 ### 3. Deploy the Infrastructure
-Apply the configuration to provision the VM and firewall rules:
 ```bash
-terraform apply
+terraform apply -var="project_id=YOUR_GCP_PROJECT_ID"
 ```
-*Note: The project ID defaults to `k8s-staging-252732`. You can override variables if needed (e.g. `terraform apply -var="machine_type=e2-standard-2"`).*
 
 ---
 
-## 🚪 Outputs & Access
+## 🛑 Clean Up (GCP)
 
-Once `terraform apply` completes successfully, it will print the following outputs:
-
-* **`instance_public_ip`**: The public IPv4 address of the VM instance.
-* **`application_ui_url`**: URL to access the React Frontend & API Gateway (`http://<IP>:4000`).
-* **`prometheus_dashboard_url`**: URL to access the Prometheus Dashboard (`http://<IP>:9092`).
-
----
-
-## 🛑 Clean Up
-
-To tear down all resources created by this configuration and avoid GCP charges:
+To tear down all resources created by GCP Terraform:
 ```bash
 terraform destroy
 ```

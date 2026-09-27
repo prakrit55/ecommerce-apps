@@ -1,0 +1,95 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: ecommerce-ui-monitor
+  labels:
+    release: monitoring
+spec:
+  jobLabel: app
+  selector:
+    matchLabels:
+      app: ecommerce-ui
+  podMetricsEndpoints:
+    - targetPort: 4000
+      path: /metrics
+      interval: 10s
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: product-catalog-monitor
+  labels:
+    release: monitoring
+spec:
+  jobLabel: app
+  selector:
+    matchLabels:
+      app: product-catalog
+  podMetricsEndpoints:
+    - targetPort: 3001
+      path: /metrics
+      interval: 10s
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: product-inventory-monitor
+  labels:
+    release: monitoring
+spec:
+  jobLabel: app
+  selector:
+    matchLabels:
+      app: product-inventory
+  podMetricsEndpoints:
+    - targetPort: 3002
+      path: /metrics
+      interval: 10s
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: shipping-handling-monitor
+  labels:
+    release: monitoring
+spec:
+  jobLabel: app
+  selector:
+    matchLabels:
+      app: shipping-handling
+  podMetricsEndpoints:
+    - targetPort: 8080
+      path: /metrics
+      interval: 10s
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: contact-support-monitor
+  labels:
+    release: monitoring
+spec:
+  jobLabel: app
+  selector:
+    matchLabels:
+      app: contact-support
+  podMetricsEndpoints:
+    - targetPort: 8000
+      path: /metrics
+      interval: 10s
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: order-management-monitor
+  labels:
+    release: monitoring
+spec:
+  jobLabel: app
+  selector:
+    matchLabels:
+      app: order-management
+  podMetricsEndpoints:
+    - targetPort: 9090
+      path: /actuator/prometheus
+      interval: 10s

@@ -74,14 +74,26 @@ sudo salt-call --local \
 ---
 
 ### Option 3: Terraform Infrastructure Deployment (GCP Cloud)
-Provisions a dedicated GCP Compute Engine instance (`e2-medium`) inside your default VPC and automatically bootstraps the SaltStack provisioning script above.
+Provisions a dedicated GCP Compute Engine instance (`e2-medium`) inside your default VPC and automatically bootstraps the microservices and observability stack.
 
 ```bash
 cd terraform
 terraform init
 terraform apply -var="project_id=YOUR_GCP_PROJECT_ID"
 ```
-Refer to the [Terraform README](file:///r:/Devops%20territory/ecom/terraform/README.md) for full parameters.
+Refer to the [GCP Terraform README](file:///r:/Devops%20territory/ecom/terraform/README.md) for full parameters.
+
+---
+
+### Option 4: Terraform Infrastructure Deployment (AWS Cloud)
+Provisions an AWS EC2 instance (`t3.medium`) with 30GB gp3 EBS storage and configured Security Groups, automatically bootstrapping Docker, Docker Compose, and all microservices.
+
+```bash
+cd terraform/aws
+terraform init
+terraform apply
+```
+Refer to the [AWS Terraform README](file:///r:/Devops%20territory/ecom/terraform/aws/README.md) for full parameters and configuration.
 
 ---
 

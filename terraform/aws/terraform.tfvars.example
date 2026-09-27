@@ -1,0 +1,19 @@
+# AWS Region where resources will be provisioned
+aws_region    = "us-east-1"
+
+# EC2 Instance Name tag
+instance_name = "ecom-app-instance"
+
+# Instance Type (2 vCPU, 4 GiB RAM recommended for full stack)
+instance_type = "t3.medium"
+
+# Storage Configuration
+root_volume_size = 30
+root_volume_type = "gp3"
+
+# Optional: Set an existing AWS EC2 Key Pair name for SSH access
+# key_name      = "my-aws-keypair"
+
+# Optional: Restrict access to your IP address (e.g. "203.0.113.50/32")
+# allowed_ssh_cidr     = ["0.0.0.0/0"]
+# allowed_traffic_cidr = ["0.0.0.0/0"]

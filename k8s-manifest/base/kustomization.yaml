@@ -13,3 +13,5 @@ resources:
   - contact-support.yaml
   - ecommerce-ui.yaml
   - ecommerce-ui-gateway.yaml
+  - pod-monitors.yaml
+  - prometheus-rules.yaml

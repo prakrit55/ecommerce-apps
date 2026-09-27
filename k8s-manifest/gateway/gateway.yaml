@@ -1,10 +1,13 @@
+# ==============================================================================
+# EKS Gateway Configuration (Active)
+# ==============================================================================
 apiVersion: gateway.networking.k8s.io/v1
 kind: Gateway
 metadata:
   name: ecommerce-gateway
   namespace: gateway-system
 spec:
-  gatewayClassName: gke-l7-global-external-managed
+  gatewayClassName: mumbai-gateway-class
   listeners:
     - name: http
       protocol: HTTP
@@ -69,3 +72,34 @@ spec:
   issuerRef:
     name: vault-selfsigned-issuer
     kind: Issuer
+
+# ==============================================================================
+# Previous GKE Gateway Configuration (Commented for Reference)
+# ==============================================================================
+# apiVersion: gateway.networking.k8s.io/v1
+# kind: Gateway
+# metadata:
+#   name: ecommerce-gateway
+#   namespace: gateway-system
+# spec:
+#   gatewayClassName: gke-l7-global-external-managed
+#   listeners:
+#     - name: http
+#       protocol: HTTP
+#       port: 80
+#       allowedRoutes:
+#         namespaces:
+#           from: All
+#     - name: https
+#       protocol: HTTPS
+#       port: 443
+#       tls:
+#         mode: Terminate
+#         certificateRefs:
+#           - kind: Secret
+#             name: ecommerce-ui-cert-secret
+#           - kind: Secret
+#             name: vault-tls-secret
+#       allowedRoutes:
+#         namespaces:
+#           from: All

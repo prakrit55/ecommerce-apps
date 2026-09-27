@@ -6,7 +6,7 @@ namespace: ecom-dev
 resources:
   - ../../base
   - secret.yaml
-  - vpa.yaml
+  # - vpa.yaml
 
 patches:
   - path: config-patch.yaml
@@ -22,20 +22,20 @@ patches:
 
 images:
   - name: contact-support
-    newName: us-central1-docker.pkg.dev/k8s-staging-252732/contact-support/contact-support
+    newName: 271643857832.dkr.ecr.ap-south-1.amazonaws.com/contact-support
     newTag: latest
   - name: ecommerce-ui
-    newName: us-central1-docker.pkg.dev/k8s-staging-252732/ecommerce-ui/ecommerce-ui
+    newName: 271643857832.dkr.ecr.ap-south-1.amazonaws.com/ecommerce-ui
     newTag: latest
   - name: order-management
-    newName: us-central1-docker.pkg.dev/k8s-staging-252732/order-management/order-management
+    newName: 271643857832.dkr.ecr.ap-south-1.amazonaws.com/order-management
     newTag: latest
   - name: product-catalog
-    newName: us-central1-docker.pkg.dev/k8s-staging-252732/product-catalog/product-catalog
+    newName: 271643857832.dkr.ecr.ap-south-1.amazonaws.com/product-catalog-code
     newTag: latest
   - name: product-inventory
-    newName: us-central1-docker.pkg.dev/k8s-staging-252732/product-inventory/product-inventory
+    newName: 271643857832.dkr.ecr.ap-south-1.amazonaws.com/product-inventory
     newTag: latest
   - name: shipping-handling
-    newName: us-central1-docker.pkg.dev/k8s-staging-252732/shipping-handling/shipping-handling
+    newName: 271643857832.dkr.ecr.ap-south-1.amazonaws.com/shipping-handling
     newTag: latest
