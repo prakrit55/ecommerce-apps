@@ -211,37 +211,37 @@ services:
   # 📊 Observability Services
   # ==========================================
 
-  prometheus:
-    image: prom/prometheus:v2.50.0
-    container_name: ecom-prometheus
-    restart: unless-stopped
-    ports:
-      - "${PROMETHEUS_PORT:-9092}:9090"
-    volumes:
-      - ./docker-compose/prometheus.yml:/etc/prometheus/prometheus.yml
-      - ./docker-compose/prometheus_rules.yml:/etc/prometheus/prometheus_rules.yml
-    networks:
-      - ecom-network
+  # prometheus:
+  #   image: prom/prometheus:v2.50.0
+  #   container_name: ecom-prometheus
+  #   restart: unless-stopped
+  #   ports:
+  #     - "${PROMETHEUS_PORT:-9092}:9090"
+  #   volumes:
+  #     - ./docker-compose/prometheus.yml:/etc/prometheus/prometheus.yml
+  #     - ./docker-compose/prometheus_rules.yml:/etc/prometheus/prometheus_rules.yml
+  #   networks:
+  #     - ecom-network
 
-  grafana:
-    image: grafana/grafana:latest
-    container_name: ecom-grafana
-    restart: unless-stopped
-    ports:
-      - "${GRAFANA_PORT:-3000}:3000"
-    volumes:
-      - grafana_data:/var/lib/grafana
-      - ./docker-compose/grafana/provisioning:/etc/grafana/provisioning
-    depends_on:
-      - prometheus
-    networks:
-      - ecom-network
+  # grafana:
+  #   image: grafana/grafana:latest
+  #   container_name: ecom-grafana
+  #   restart: unless-stopped
+  #   ports:
+  #     - "${GRAFANA_PORT:-3000}:3000"
+  #   volumes:
+  #     - grafana_data:/var/lib/grafana
+  #     - ./docker-compose/grafana/provisioning:/etc/grafana/provisioning
+  #   depends_on:
+  #     - prometheus
+  #   networks:
+  #     - ecom-network
 
 volumes:
   postgres_data:
   mongodb_data:
   redis_data:
-  grafana_data:
+  # grafana_data:
 
 networks:
   ecom-network:
