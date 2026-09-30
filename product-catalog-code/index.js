@@ -91,8 +91,20 @@ const serviceExceptionsTotal = new client.Counter({
 const httpRequestsInFlight = new client.Gauge({
   name: 'http_requests_in_flight',
   help: 'Current number of simultaneous active HTTP requests being processed (concurrency/load)',
+  labelNames: ['route', 'method'],
   registers: [register],
 });
+
+// Helper function to resolve parameterized route template
+function getRoutePattern(req) {
+  if (req.route && req.route.path) {
+    return (req.baseUrl || '') + req.route.path;
+  }
+  const pathname = req.path || '';
+  if (pathname === '/api/products') return '/api/products';
+  if (/^\/api\/products\/[^/]+$/.test(pathname)) return '/api/products/:id';
+  return 'unmatched';
+}
 
 // Throughput: Response Payload Size in Bytes (Network throughput)
 const httpResponseSizeBytes = new client.Histogram({
@@ -108,40 +120,55 @@ app.use((req, res, next) => {
   if (req.path === '/metrics') {
     return next();
   }
-  
+
+  const initialRoute = getRoutePattern(req);
+  const method = req.method;
+
   // Increment in-flight requests on entry
-  httpRequestsInFlight.inc();
+  httpRequestsInFlight.inc({ route: initialRoute, method });
   const startTime = process.hrtime.bigint();
+  let decremented = false;
+
+  const decrementInFlight = () => {
+    if (!decremented) {
+      decremented = true;
+      httpRequestsInFlight.dec({ route: initialRoute, method });
+    }
+  };
 
   res.on('finish', () => {
-    // Decrement in-flight requests on finish
-    httpRequestsInFlight.dec();
+    decrementInFlight();
 
     const endTime = process.hrtime.bigint();
     const durationMs = Number(endTime - startTime) / 1e6;
     const durationSec = durationMs / 1000;
-    const route = req.route ? req.baseUrl + req.route.path : req.path;
+    const route = getRoutePattern(req);
     const status = res.statusCode || 500;
     const statusCode = status.toString();
 
     // Latency & Response Time
-    httpRequestDurationSeconds.observe({ method: req.method, route, status_code: statusCode }, durationSec);
-    httpResponseTimeMilliseconds.observe({ method: req.method, route, status_code: statusCode }, durationMs);
+    httpRequestDurationSeconds.observe({ method, route, status_code: statusCode }, durationSec);
+    httpResponseTimeMilliseconds.observe({ method, route, status_code: statusCode }, durationMs);
     
     // Request Volume & Throughput
-    httpRequestsTotal.inc({ method: req.method, route, status_code: statusCode });
+    httpRequestsTotal.inc({ method, route, status_code: statusCode });
 
     // Payload size throughput
     const contentLength = parseInt(res.getHeader('content-length'), 10);
     if (!isNaN(contentLength)) {
-      httpResponseSizeBytes.observe({ method: req.method, route, status_code: statusCode }, contentLength);
+      httpResponseSizeBytes.observe({ method, route, status_code: statusCode }, contentLength);
     }
 
     // Track Error Rate (4xx and 5xx)
     if (status >= 400) {
       const errorType = status >= 500 ? 'server_error' : 'client_error';
-      httpRequestsErrorsTotal.inc({ method: req.method, route, status_code: statusCode, error_type: errorType });
+      httpRequestsErrorsTotal.inc({ method, route, status_code: statusCode, error_type: errorType });
     }
+  });
+
+  // Prevent gauge leaks on client aborts/premature close
+  res.on('close', () => {
+    decrementInFlight();
   });
 
   next();

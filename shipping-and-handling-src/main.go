@@ -25,7 +25,7 @@ var (
 			Help:    "Duration of HTTP requests in seconds (response time & latency)",
 			Buckets: []float64{0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0, 10.0},
 		},
-		[]string{"method", "path", "status"},
+		[]string{"method", "route", "status_code"},
 	)
 
 	httpResponseTimeMs = promauto.NewHistogramVec(
@@ -34,7 +34,7 @@ var (
 			Help:    "Total time taken to process a request and generate a response in milliseconds",
 			Buckets: []float64{5, 10, 25, 50, 100, 250, 500, 1000, 2500, 5000, 10000},
 		},
-		[]string{"method", "path", "status"},
+		[]string{"method", "route", "status_code"},
 	)
 
 	httpRequestsTotal = promauto.NewCounterVec(
@@ -42,7 +42,7 @@ var (
 			Name: "http_requests_total",
 			Help: "Total number of HTTP requests processed",
 		},
-		[]string{"method", "path", "status"},
+		[]string{"method", "route", "status_code"},
 	)
 
 	httpRequestErrorsTotal = promauto.NewCounterVec(
@@ -50,7 +50,7 @@ var (
 			Name: "http_requests_errors_total",
 			Help: "Total number of HTTP requests resulting in client (4xx) or server (5xx) errors",
 		},
-		[]string{"method", "path", "status", "error_type"},
+		[]string{"method", "route", "status_code", "error_type"},
 	)
 
 	serviceExceptionsTotal = promauto.NewCounterVec(
@@ -62,11 +62,12 @@ var (
 	)
 
 	// Throughput: Active In-Flight Requests Gauge (Current Concurrent Load)
-	httpRequestsInFlight = promauto.NewGauge(
+	httpRequestsInFlight = promauto.NewGaugeVec(
 		prometheus.GaugeOpts{
 			Name: "http_requests_in_flight",
 			Help: "Current number of simultaneous active HTTP requests being processed (concurrency/load)",
 		},
+		[]string{"route", "method"},
 	)
 
 	// Throughput: Response Payload Size in Bytes (Network throughput)
@@ -76,7 +77,7 @@ var (
 			Help:    "Size of HTTP response payload in bytes (network throughput & bandwidth tracking)",
 			Buckets: []float64{100, 500, 1000, 5000, 10000, 50000, 100000, 500000, 1000000},
 		},
-		[]string{"method", "path", "status"},
+		[]string{"method", "route", "status_code"},
 	)
 )
 
@@ -99,8 +100,13 @@ func (rw *responseWriterWithStatus) Write(b []byte) (int, error) {
 
 func prometheusMiddleware(next http.HandlerFunc, path string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		httpRequestsInFlight.Inc()
-		defer httpRequestsInFlight.Dec()
+		route := path
+		if route == "" {
+			route = "unmatched"
+		}
+
+		httpRequestsInFlight.WithLabelValues(route, r.Method).Inc()
+		defer httpRequestsInFlight.WithLabelValues(route, r.Method).Dec()
 
 		start := time.Now()
 		wrapped := &responseWriterWithStatus{ResponseWriter: w, statusCode: http.StatusOK}
@@ -112,10 +118,10 @@ func prometheusMiddleware(next http.HandlerFunc, path string) http.HandlerFunc {
 		durationMs := float64(duration.Milliseconds())
 		statusStr := strconv.Itoa(wrapped.statusCode)
 
-		httpRequestDuration.WithLabelValues(r.Method, path, statusStr).Observe(durationSec)
-		httpResponseTimeMs.WithLabelValues(r.Method, path, statusStr).Observe(durationMs)
-		httpRequestsTotal.WithLabelValues(r.Method, path, statusStr).Inc()
-		httpResponseSizeBytes.WithLabelValues(r.Method, path, statusStr).Observe(float64(wrapped.bytesWritten))
+		httpRequestDuration.WithLabelValues(r.Method, route, statusStr).Observe(durationSec)
+		httpResponseTimeMs.WithLabelValues(r.Method, route, statusStr).Observe(durationMs)
+		httpRequestsTotal.WithLabelValues(r.Method, route, statusStr).Inc()
+		httpResponseSizeBytes.WithLabelValues(r.Method, route, statusStr).Observe(float64(wrapped.bytesWritten))
 
 		// Track Error Rate (4xx and 5xx)
 		if wrapped.statusCode >= 400 {
@@ -123,7 +129,7 @@ func prometheusMiddleware(next http.HandlerFunc, path string) http.HandlerFunc {
 			if wrapped.statusCode >= 500 {
 				errorType = "server_error"
 			}
-			httpRequestErrorsTotal.WithLabelValues(r.Method, path, statusStr, errorType).Inc()
+			httpRequestErrorsTotal.WithLabelValues(r.Method, route, statusStr, errorType).Inc()
 		}
 	}
 }

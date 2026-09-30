@@ -26,28 +26,28 @@ SYSTEM_CPU_LOAD_1M = Gauge(
 HTTP_REQUEST_DURATION_SECONDS = Histogram(
     'http_request_duration_seconds',
     'Duration of HTTP requests in seconds (response time & latency)',
-    ['method', 'endpoint', 'http_status'],
+    ['method', 'route', 'status_code'],
     buckets=[0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0, 10.0]
 )
 
 HTTP_RESPONSE_TIME_MILLISECONDS = Histogram(
     'http_response_time_milliseconds',
     'Total time taken to process a request and generate a response in milliseconds',
-    ['method', 'endpoint', 'http_status'],
+    ['method', 'route', 'status_code'],
     buckets=[5, 10, 25, 50, 100, 250, 500, 1000, 2500, 5000, 10000]
 )
 
 HTTP_REQUESTS_TOTAL = Counter(
     'http_requests_total',
     'Total number of HTTP requests processed (Request Volume & Throughput)',
-    ['method', 'endpoint', 'http_status']
+    ['method', 'route', 'status_code']
 )
 
 # Total HTTP Error Requests Counter (Error Rate Tracking)
 HTTP_REQUESTS_ERRORS_TOTAL = Counter(
     'http_requests_errors_total',
     'Total number of HTTP requests resulting in client (4xx) or server (5xx) errors',
-    ['method', 'endpoint', 'http_status', 'error_type']
+    ['method', 'route', 'status_code', 'error_type']
 )
 
 # Service Exceptions & Operational Failures Counter
@@ -60,48 +60,61 @@ SERVICE_EXCEPTIONS_TOTAL = Counter(
 # Throughput: In-Flight Active Requests Gauge (Concurrency / Current Load)
 HTTP_REQUESTS_IN_FLIGHT = Gauge(
     'http_requests_in_flight',
-    'Current number of simultaneous active HTTP requests being processed (concurrency/load)'
+    'Current number of simultaneous active HTTP requests being processed (concurrency/load)',
+    ['route', 'method']
 )
 
 # Throughput: Response Payload Size in Bytes (Network throughput)
 HTTP_RESPONSE_SIZE_BYTES = Histogram(
     'http_response_size_bytes',
     'Size of HTTP response payload in bytes (network throughput & bandwidth tracking)',
-    ['method', 'endpoint', 'http_status'],
+    ['method', 'route', 'status_code'],
     buckets=[100, 500, 1000, 5000, 10000, 50000, 100000, 500000, 1000000]
 )
+
+def get_route():
+    if request.url_rule and request.url_rule.rule:
+        return request.url_rule.rule
+    return 'unmatched'
 
 @app.before_request
 def before_request():
     if request.path != '/metrics':
-        HTTP_REQUESTS_IN_FLIGHT.inc()
+        route = get_route()
+        HTTP_REQUESTS_IN_FLIGHT.labels(route=route, method=request.method).inc()
+        request._in_flight_tracked = (route, request.method)
     request.start_time = time.time()
+
+@app.teardown_request
+def teardown_request(exception=None):
+    if hasattr(request, '_in_flight_tracked'):
+        route, method = request._in_flight_tracked
+        HTTP_REQUESTS_IN_FLIGHT.labels(route=route, method=method).dec()
 
 @app.after_request
 def after_request(response):
     if request.path != '/metrics':
-        HTTP_REQUESTS_IN_FLIGHT.dec()
         resp_time_sec = time.time() - getattr(request, 'start_time', time.time())
         resp_time_ms = resp_time_sec * 1000.0
-        endpoint = request.endpoint or request.path
+        route = get_route()
         status = str(response.status_code)
 
         HTTP_REQUEST_DURATION_SECONDS.labels(
             method=request.method,
-            endpoint=endpoint,
-            http_status=status
+            route=route,
+            status_code=status
         ).observe(resp_time_sec)
 
         HTTP_RESPONSE_TIME_MILLISECONDS.labels(
             method=request.method,
-            endpoint=endpoint,
-            http_status=status
+            route=route,
+            status_code=status
         ).observe(resp_time_ms)
 
         HTTP_REQUESTS_TOTAL.labels(
             method=request.method,
-            endpoint=endpoint,
-            http_status=status
+            route=route,
+            status_code=status
         ).inc()
 
         # Track Error Rate (4xx and 5xx)
@@ -109,8 +122,8 @@ def after_request(response):
             error_type = 'server_error' if response.status_code >= 500 else 'client_error'
             HTTP_REQUESTS_ERRORS_TOTAL.labels(
                 method=request.method,
-                endpoint=endpoint,
-                http_status=status,
+                route=route,
+                status_code=status,
                 error_type=error_type
             ).inc()
 
@@ -118,8 +131,8 @@ def after_request(response):
         if response.content_length:
             HTTP_RESPONSE_SIZE_BYTES.labels(
                 method=request.method,
-                endpoint=endpoint,
-                http_status=status
+                route=route,
+                status_code=status
             ).observe(response.content_length)
 
     return response
